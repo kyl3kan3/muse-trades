@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     if (!hold || hold.status !== "held" || hold.shopId !== shop.id) {
       return NextResponse.json({ error: "Hold expired, missing, or not valid for this shop. Get a new slot." }, { status: 409 });
     }
-    if (quote && hold.quoteId && hold.quoteId !== quote.id) {
+    if (hold.quoteId && body.quoteId !== hold.quoteId) {
       return NextResponse.json({ error: "Hold and quote do not match." }, { status: 409 });
     }
     slotStart = hold.slotStart;
