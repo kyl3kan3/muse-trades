@@ -1,3 +1,4 @@
+import { authenticateOperator, requestedShopAllowed } from "@/lib/operator-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { getShop } from "@/lib/shops";
 import { store, expireHolds } from "@/lib/store";
@@ -76,7 +77,12 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const shopId = req.nextUrl.searchParams.get("shopId");
-  const rows = [...store.bookings.values()].filter((b) => !shopId || b.shopId === shopId);
-  return NextResponse.json({ bookings: rows });
+  const access = await authenticateOperator(req.headers);
+  if (!access.ok) return access.response;
+  if (!requestedShopAllowed(access, req.nextUrl.searchParams.get("shopId"))) {
+    return NextResponse.json({error:"Shop access denied."}, {status:403, headers:{"Cache-Control":"private, no-store"}});
+  }
+  const shopId = access.shopId;
+  const rows = [...store.bookings.values()].filter((b) => b.shopId === shopId);
+  return NextResponse.json({ bookings: rows }, {headers:{"Cache-Control":"private, no-store"}});
 }
