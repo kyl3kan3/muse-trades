@@ -1,12 +1,10 @@
 import { timingSafeEqual } from "node:crypto";
-import { NextRequest, NextResponse } from "next/server";
-
 /**
  * Per-shop owner tokens are configured server-side as a JSON object:
  * { "stl-comfort-hvac": "<random token>", "stl-metro-plumb": "<random token>" }.
  * Use separate, randomly generated secrets of at least 32 characters per shop.
  */
-export function requireShopOwner(req: NextRequest, shopId: string): NextResponse | null {
+export function requireShopOwner(req: Request, shopId: string): Response | null {
   let configured: unknown;
   try {
     configured = JSON.parse(process.env.MUSE_OWNER_TOKENS_JSON ?? "null");
@@ -15,7 +13,7 @@ export function requireShopOwner(req: NextRequest, shopId: string): NextResponse
   }
 
   if (!configured || typeof configured !== "object" || Array.isArray(configured)) {
-    return NextResponse.json(
+    return Response.json(
       { error: "Owner access is not configured." },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
@@ -23,7 +21,7 @@ export function requireShopOwner(req: NextRequest, shopId: string): NextResponse
 
   const expected = (configured as Record<string, unknown>)[shopId];
   if (typeof expected !== "string" || expected.length < 32) {
-    return NextResponse.json(
+    return Response.json(
       { error: "Owner access is not configured for this shop." },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
@@ -42,7 +40,7 @@ export function requireShopOwner(req: NextRequest, shopId: string): NextResponse
 }
 
 function unauthorized() {
-  return NextResponse.json(
+  return Response.json(
     { error: "Owner authentication required." },
     { status: 401, headers: { "Cache-Control": "no-store", "WWW-Authenticate": "Bearer" } },
   );
