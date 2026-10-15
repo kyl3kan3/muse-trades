@@ -15,7 +15,10 @@ export default function OwnerPage() {
 
   useEffect(() => {
     fetch("/api/v1/owner")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("Owner access denied");
+        return r.json();
+      })
       .then(setBoard)
       .catch((e) => setErr(String(e)));
   }, []);
