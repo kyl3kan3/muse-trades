@@ -44,3 +44,14 @@ Add my custom connector: https://YOUR-HOST/openapi.json
 Muse reads the spec and `/llms.txt`.
 
 Persistence: quotes, holds, and bookings live in memory on this MVP. Next step is Postgres so holds survive deploys.
+
+
+## Owner dashboard access
+
+The owner board and booking-list API are private. Configure `MUSE_OWNER_TOKENS_JSON` in the hosting environment as a JSON object keyed by shop ID. Use a different cryptographically random token of at least 32 characters for each shop, and distribute each token only to that shop's authorized owner. Example shape (replace every placeholder with a fresh random secret):
+
+```json
+{"stl-comfort-hvac":"REPLACE_WITH_RANDOM_32_PLUS_CHARACTER_TOKEN","stl-metro-plumb":"REPLACE_WITH_A_DIFFERENT_RANDOM_32_PLUS_CHARACTER_TOKEN"}
+```
+
+The token is entered into the owner page for the selected shop and is not saved to browser storage. If the environment variable is missing or malformed, owner data APIs fail closed. Do not commit real tokens to Git.
