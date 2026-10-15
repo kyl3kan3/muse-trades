@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getShop } from "@/lib/shops";
+import { requireShopOwner } from "@/lib/owner-auth";
 import { store, expireHolds } from "@/lib/store";
 import type { Booking } from "@/lib/types";
 
@@ -38,8 +39,8 @@ export async function POST(req: NextRequest) {
   let slotEnd = body.slotEnd;
   if (body.holdId) {
     const hold = store.holds.get(body.holdId);
-    if (!hold || hold.status !== "held") {
-      return NextResponse.json({ error: "Hold expired or missing. Get a new slot." }, { status: 409 });
+    if (!hold || hold.status !== "held" || hold.shopId !== shop.id) {
+      return NextResponse.json({ error: "Hold expired, missing, or not valid for this shop. Get a new slot." }, { status: 409 });
     }
     slotStart = hold.slotStart;
     slotEnd = hold.slotEnd;
@@ -50,6 +51,12 @@ export async function POST(req: NextRequest) {
   }
 
   const quote = body.quoteId ? store.quotes.get(body.quoteId) : undefined;
+  if (body.quoteId && (!quote || quote.shopId !== shop.id)) {
+    return NextResponse.json({ error: "Quote is missing or does not belong to this shop." }, { status: 404 });
+  }
+  if (body.holdId && quote && store.holds.get(body.holdId)?.quoteId && store.holds.get(body.holdId)?.quoteId !== quote.id) {
+    return NextResponse.json({ error: "Hold and quote do not match." }, { status: 409 });
+  }
   const origin = req.nextUrl.origin;
   const booking: Booking = {
     id: `b_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
@@ -77,6 +84,10 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const shopId = req.nextUrl.searchParams.get("shopId");
-  const rows = [...store.bookings.values()].filter((b) => !shopId || b.shopId === shopId);
-  return NextResponse.json({ bookings: rows });
+  if (!shopId) return NextResponse.json({ error: "shopId is required." }, { status: 400 });
+  if (!getShop(shopId)) return NextResponse.json({ error: "Unknown shop." }, { status: 404 });
+  const authError = requireShopOwner(req, shopId);
+  if (authError) return authError;
+  const rows = [...store.bookings.values()].filter((b) => b.shopId === shopId);
+  return NextResponse.json({ bookings: rows }, { headers: { "Cache-Control": "private, no-store" } });
 }
