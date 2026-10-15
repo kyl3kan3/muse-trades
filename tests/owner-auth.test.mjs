@@ -43,8 +43,11 @@ test("shop owner data requires the correct per-shop bearer token", () => {
 test("one shop token cannot authorize another shop", () => {
   const prior = process.env.MUSE_OWNER_TOKENS_JSON;
   try {
-    process.env.MUSE_OWNER_TOKENS_JSON = JSON.stringify({ [shopId]: validToken });
-    assert.equal(requireShopOwner(request("Bearer " + validToken), "stl-metro-plumb")?.status, 503);
+    process.env.MUSE_OWNER_TOKENS_JSON = JSON.stringify({
+      [shopId]: validToken,
+      "stl-metro-plumb": "b".repeat(48),
+    });
+    assert.equal(requireShopOwner(request("Bearer " + validToken), "stl-metro-plumb")?.status, 401);
   } finally {
     if (prior === undefined) delete process.env.MUSE_OWNER_TOKENS_JSON;
     else process.env.MUSE_OWNER_TOKENS_JSON = prior;
