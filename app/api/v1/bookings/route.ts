@@ -35,12 +35,20 @@ export async function POST(req: NextRequest) {
   const shop = getShop(body.shopId);
   if (!shop) return NextResponse.json({ error: "Unknown shop." }, { status: 404 });
 
+  const quote = body.quoteId ? store.quotes.get(body.quoteId) : undefined;
+  if (body.quoteId && (!quote || quote.shopId !== shop.id)) {
+    return NextResponse.json({ error: "Quote is missing or does not belong to this shop." }, { status: 404 });
+  }
+
   let slotStart = body.slotStart;
   let slotEnd = body.slotEnd;
   if (body.holdId) {
     const hold = store.holds.get(body.holdId);
     if (!hold || hold.status !== "held" || hold.shopId !== shop.id) {
       return NextResponse.json({ error: "Hold expired, missing, or not valid for this shop. Get a new slot." }, { status: 409 });
+    }
+    if (quote && hold.quoteId && hold.quoteId !== quote.id) {
+      return NextResponse.json({ error: "Hold and quote do not match." }, { status: 409 });
     }
     slotStart = hold.slotStart;
     slotEnd = hold.slotEnd;
@@ -50,13 +58,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Pass holdId or slotStart and slotEnd." }, { status: 400 });
   }
 
-  const quote = body.quoteId ? store.quotes.get(body.quoteId) : undefined;
-  if (body.quoteId && (!quote || quote.shopId !== shop.id)) {
-    return NextResponse.json({ error: "Quote is missing or does not belong to this shop." }, { status: 404 });
-  }
-  if (body.holdId && quote && store.holds.get(body.holdId)?.quoteId && store.holds.get(body.holdId)?.quoteId !== quote.id) {
-    return NextResponse.json({ error: "Hold and quote do not match." }, { status: 409 });
-  }
   const origin = req.nextUrl.origin;
   const booking: Booking = {
     id: `b_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
