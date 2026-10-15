@@ -69,7 +69,7 @@ export default function OwnerPage() {
       <p style={{ letterSpacing: "0.16em", textTransform: "uppercase", fontSize: 12, color: "#8fa38a" }}>Shop owner</p>
       <h1 style={{ fontWeight: 500 }}>Jobs that arrived</h1>
       <p>{SHOPS.find((shop) => shop.id === shopId)?.label}</p>
-      <button type="button" onClick={() => setBoard(null)} style={{ padding: 8 }}>Sign out</button>
+      <button type="button" onClick={() => { setBoard(null); setToken(""); setErr(""); }} style={{ padding: 8 }}>Sign out</button>
       <Section title="Bookings">
         {board.bookings.length === 0 && <Empty text="No bookings yet." />}
         {board.bookings.map((b) => (
