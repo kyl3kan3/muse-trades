@@ -1,13 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { NextRequest } from "next/server";
 import { requireShopOwner } from "../lib/owner-auth.ts";
 
 const shopId = "stl-comfort-hvac";
 const validToken = "a".repeat(48);
 
 function request(authorization) {
-  return new NextRequest("https://example.test/api/v1/owner?shopId=" + shopId, {
+  return new Request("https://example.test/api/v1/owner?shopId=" + shopId, {
     headers: authorization ? { authorization } : {},
   });
 }
